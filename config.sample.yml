@@ -1,0 +1,63 @@
+# Weather Collector Configuration Template
+# Copy this file to config.yml and fill in your actual values
+#
+# Copyright (c) 2025 Darren Soothill
+# Email: darren [at] soothill [dot] com
+# All rights reserved.
+
+met_office:
+  # Get your API key from: https://datahub.metoffice.gov.uk/
+  # 1. Create an account at Met Office DataHub
+  # 2. Navigate to "My Account" > "API Keys"
+  # 3. Create a new API key for "Land Observations API"
+  api_key: "YOUR_MET_OFFICE_API_KEY_HERE"
+  
+  # Base URL for Met Office DataHub Observations API
+  base_url: "https://data.hub.api.metoffice.gov.uk"
+  
+  # Location configuration
+  location:
+    name: "Newport Pagnell"
+    latitude: 52.0867
+    longitude: -0.7231
+  
+  # Request timeout in seconds
+  timeout: 30
+  
+  # Retry configuration with exponential backoff
+  retry:
+    max_attempts: 5          # Total attempts (1 initial + 4 retries)
+    initial_backoff: 5       # Initial backoff delay in seconds
+    max_backoff: 160         # Maximum single backoff wait in seconds
+    max_total_time: 300      # Maximum total time for all retries (5 minutes)
+
+influxdb:
+  # InfluxDB v2 connection settings
+  url: "http://localhost:8086"
+  org: "your-org-name"
+  bucket: "weather"
+  token: "YOUR_INFLUXDB_TOKEN_HERE"
+  
+  # Request timeout in seconds
+  timeout: 10
+  
+  # Retry configuration for InfluxDB writes
+  retry:
+    max_attempts: 3
+    initial_backoff: 2
+    max_backoff: 8
+
+cache:
+  # Local file path for caching data when InfluxDB is unavailable
+  # This directory will be created automatically
+  # Default uses local directory for easy testing
+  # After install, you can change to: /var/lib/weather-collector/cache.json
+  file_path: "./cache/cache.json"
+
+logging:
+  # Logging level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"
+
+historical_import:
+  # Batch size for writing historical data to InfluxDB
+  batch_size: 100

@@ -1,0 +1,32 @@
+# Weather Data Collector - Systemd Service Unit
+#
+# Copyright (c) 2025 Darren Soothill
+# Email: darren [at] soothill [dot] com
+# All rights reserved.
+
+[Unit]
+Description=Weather Data Collector
+Documentation=https://github.com/yourusername/weather
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/darren/weather
+ExecStart=/home/darren/weather/venv/bin/python /home/darren/weather/weather_collector.py
+
+# Security settings
+PrivateTmp=yes
+NoNewPrivileges=yes
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=weather-collector
+
+# Restart policy
+Restart=on-failure
+RestartSec=5m
+
+[Install]
+WantedBy=multi-user.target

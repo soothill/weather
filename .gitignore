@@ -1,0 +1,35 @@
+# Weather Collector - Git Ignore Rules
+#
+# Copyright (c) 2025 Darren Soothill
+# Email: darren [at] soothill [dot] com
+# All rights reserved.
+
+# Configuration files with sensitive data
+config.yml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Cache and data files
+cache/
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

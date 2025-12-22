@@ -1,0 +1,23 @@
+# Weather Data Collector - Systemd Timer Unit
+#
+# Copyright (c) 2025 Darren Soothill
+# Email: darren [at] soothill [dot] com
+# All rights reserved.
+
+[Unit]
+Description=Weather Data Collector Timer
+Documentation=https://github.com/yourusername/weather
+Requires=weather-collector.service
+
+[Timer]
+# Run every 30 minutes
+OnCalendar=*:0,30:00
+# Run 2 minutes after boot if we missed a scheduled run
+OnBootSec=2min
+# Ensure timer stays accurate even if system clock changes
+Persistent=true
+# Randomize start time by up to 30 seconds to avoid load spikes
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target
