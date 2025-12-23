@@ -4,14 +4,24 @@ Met Office API Endpoint Tester
 Tests various endpoint patterns to find the correct one.
 """
 
+import sys
 import requests
 import yaml
 import json
 from datetime import datetime, timezone
 
-# Load config
-with open('config.yml', 'r') as f:
-    config = yaml.safe_load(f)
+# Load config with error handling
+try:
+    with open('config.yml', 'r') as f:
+        config = yaml.safe_load(f)
+except FileNotFoundError:
+    print("✗ Error: config.yml not found!")
+    print("Please copy config.sample.yml to config.yml and configure it.")
+    print("Run: make config")
+    sys.exit(1)
+except yaml.YAMLError as e:
+    print(f"✗ Error parsing config.yml: {e}")
+    sys.exit(1)
 
 api_key = config['met_office']['api_key']
 base_url = config['met_office']['base_url']

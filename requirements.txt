@@ -5,22 +5,19 @@
 # All rights reserved.
 
 # HTTP client for API requests
-requests>=2.31.0
+requests==2.32.5
 
 # InfluxDB v2 Python client
-influxdb-client>=1.38.0
+influxdb-client==1.49.0
 
 # YAML configuration file parsing
-PyYAML>=6.0.1
+PyYAML==6.0.3
 
 # Date and time handling
-python-dateutil>=2.8.2
-
-# Enhanced HTTP client with connection pooling and retry
-requests>=2.31.0
+python-dateutil==2.9.0.post0
 
 # System monitoring for performance testing
-psutil>=5.9.0
+psutil==6.1.1
 
 # Threading utilities (built-in, but listed for clarity)
 # threading is part of standard library

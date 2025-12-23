@@ -4,7 +4,56 @@
 # Email: darren [at] soothill [dot] com
 # All rights reserved.
 
-.PHONY: help setup config install start stop restart status logs test uninstall clean venv api-key-info
+.PHONY: help setup config install start stop restart status logs test uninstall clean venv api-key-info test-unit test-integration test-performance test-all test-coverage
+
+### Test Commands
+test-unit: ## Run unit tests only
+	@if [ ! -d $(VENV) ]; then \
+		echo "✗ Error: Virtual environment not found!"; \
+		echo "Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@echo "Running unit tests..."
+	@$(VENV_BIN)/pytest test_units.py -v --tb=short
+
+test-integration: ## Run integration tests only
+	@if [ ! -d $(VENV) ]; then \
+		echo "✗ Error: Virtual environment not found!"; \
+		echo "Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@echo "Running integration tests..."
+	@$(VENV_BIN)/pytest test_integration.py -v --tb=short -m integration
+
+test-performance: ## Run performance tests only
+	@if [ ! -d $(VENV) ]; then \
+		echo "✗ Error: Virtual environment not found!"; \
+		echo "Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@echo "Running performance tests..."
+	@$(VENV_BIN)/pytest test_performance.py -v --tb=short -m performance -s
+
+test-all: ## Run all tests (unit, integration, performance)
+	@if [ ! -d $(VENV) ]; then \
+		echo "✗ Error: Virtual environment not found!"; \
+		echo "Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@echo "Running all tests..."
+	@$(VENV_BIN)/pytest test_units.py test_integration.py test_performance.py -v --tb=short
+
+test-coverage: ## Run tests with coverage report
+	@if [ ! -d $(VENV) ]; then \
+		echo "✗ Error: Virtual environment not found!"; \
+		echo "Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@echo "Running tests with coverage..."
+	@$(VENV_BIN)/pytest test_units.py test_integration.py --cov=weather_collector --cov-report=html --cov-report=term -v
+	@echo ""
+	@echo "Coverage report generated: htmlcov/index.html"
+
 
 # Default target
 .DEFAULT_GOAL := help

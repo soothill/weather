@@ -1,6 +1,6 @@
 # Weather Data Collector
 
-An automated weather data collection system that fetches hourly weather observations from the Met Office DataHub and stores them in InfluxDB v2. Features resilient error handling with local caching fallback and exponential backoff retry logic.
+An automated weather data collection system that fetches hourly weather observations from the Met Office DataHub and stores them in InfluxDB v2. Features resilient error handling with local caching fallback, exponential backoff retry logic, and optimized batch writes.
 
 **Copyright (c) 2025 Darren Soothill**  
 **Email:** darren [at] soothill [dot] com  
@@ -8,10 +8,11 @@ An automated weather data collection system that fetches hourly weather observat
 
 ## Features
 
-- 🌤️ **Met Office Integration**: Fetches weather data from Met Office DataHub Site Specific API
-- 📊 **InfluxDB v2 Storage**: Stores time-series weather data in InfluxDB
+- 🌤️ **Met Office Integration**: Fetches weather data from Met Office DataHub Observation API
+- 📊 **InfluxDB v2 Storage**: Stores time-series weather data in InfluxDB with batch writes
 - 💾 **Local Cache Fallback**: Automatically caches data locally when InfluxDB is unavailable
-- 🔄 **Auto-Recovery**: Uploads cached data when InfluxDB becomes available again
+- 🔄 **Auto-Recovery**: Uploads cached data in batches when InfluxDB becomes available again
+- ⚡ **Optimized Performance**: Batch writes significantly improve cache recovery and import speeds
 - ⏰ **Systemd Timer**: Automated hourly collection using systemd
 - 🔁 **Exponential Backoff**: Configurable retry logic with increasing delays
 - ⏱️ **Request Timeouts**: All HTTP requests have configurable timeouts
@@ -20,13 +21,11 @@ An automated weather data collection system that fetches hourly weather observat
 
 ## Weather Parameters Collected
 
-- Temperature (screen, max, min, feels-like, dew point)
+- Temperature
 - Humidity (relative humidity)
-- Wind (speed, direction, gusts at 10m)
-- Pressure (mean sea level pressure)
-- Precipitation (rate, total amount, snow amount)
+- Wind (speed, direction, gusts)
+- Pressure (mean sea level pressure, pressure tendency)
 - Visibility
-- UV Index
 - Weather code
 
 ## Prerequisites
@@ -89,10 +88,10 @@ Run a manual collection to verify everything works correctly.
 make import-historical
 ```
 
-This one-time command imports all available historical weather data from the Met Office API:
-- **API Efficient**: Uses only ONE API request
-- **Bulk Import**: Typically imports 168+ hours (7 days) of historical observations
-- **Fast**: Completes in ~30-60 seconds
+This one-time command imports all available historical weather data from Met Office API:
+- **API Efficient**: Uses geohash to fetch location-specific data
+- **Bulk Import**: Imports available historical observations (typically ~48 hours)
+- **Fast Batch Writes**: Optimized batch writes complete in seconds
 - **Safe**: Can be re-run without creating duplicates (InfluxDB handles timestamps)
 
 Example output:
@@ -101,16 +100,15 @@ Historical Weather Data Import
 
 → Fetching all available historical data from Met Office API...
 → Parsing historical observations...
-✓ Retrieved 168 hourly observations
-✓ Date range: 2024-12-15T00:00:00Z to 2024-12-22T02:00:00Z
+✓ Retrieved 48 hourly observations
+✓ Date range: 2024-12-15T00:00:00Z to 2024-12-17T00:00:00Z
 
 → Importing to InfluxDB...
-✓ Batch 1/2: 100 points written
-✓ Batch 2/2: 68 points written
+✓ Batch 1/1: 48 points written
 
 Import Complete!
-✓ Total observations:    168
-✓ Successfully imported: 168
+✓ Total observations:    48
+✓ Successfully imported: 48
 ```
 
 ### 6. Install and Start

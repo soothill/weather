@@ -1,0 +1,22 @@
+# Test Dependencies for Weather Collector
+#
+# Copyright (c) 2025 Darren Soothill
+# Email: darren [at] soothill [dot] com
+# All rights reserved.
+
+# Testing framework
+pytest>=8.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.10.0
+
+# HTTP request mocking
+responses>=0.24.0
+
+# Time mocking for testing
+freezegun>=1.2.0
+
+# Type checking (optional)
+mypy>=1.0.0
+
+# Code coverage reporting
+coverage>=7.0.0

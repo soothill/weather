@@ -327,13 +327,20 @@ class InfluxDBWriter:
     
     def write_data(self, weather_data: Dict[str, Any]) -> bool:
         """Write weather data to InfluxDB with retry logic"""
+        result = self.write_batch([weather_data])
+        return result['successful'] > 0 and result['failed'] == 0
+    
+    def write_batch(self, data_points: List[Dict[str, Any]]) -> Dict[str, int]:
+        """Write multiple weather data points to InfluxDB in a single batch"""
+        if not data_points:
+            return {"total": 0, "successful": 0, "failed": 0}
         
         attempt = 0
         backoff = self.initial_backoff
         
         while attempt < self.max_attempts:
             try:
-                logging.info(f"Attempting to write to InfluxDB (attempt {attempt + 1}/{self.max_attempts})")
+                logging.info(f"Attempting to write {len(data_points)} points to InfluxDB (attempt {attempt + 1}/{self.max_attempts})")
                 
                 with InfluxDBClient(
                     url=self.url,
@@ -343,31 +350,35 @@ class InfluxDBWriter:
                 ) as client:
                     write_api = client.write_api(write_options=SYNCHRONOUS)
                     
-                    # Create point
-                    point = Point("weather_observation")
+                    points = []
+                    for weather_data in data_points:
+                        # Create point
+                        point = Point("weather_observation")
+                        
+                        # Add tags
+                        point.tag("location", weather_data.get('location_name', 'Unknown'))
+                        point.tag("source", "met_office")
+                        
+                        # Add fields
+                        for key, value in weather_data.items():
+                            if key not in ['timestamp', 'location_name', 'latitude', 'longitude']:
+                                if isinstance(value, (int, float)):
+                                    point.field(key, float(value))
+                                elif isinstance(value, str) and key != 'timestamp':
+                                    point.field(key, value)
+                        
+                        # Set timestamp
+                        if 'timestamp' in weather_data:
+                            timestamp = datetime.fromisoformat(weather_data['timestamp'].replace('Z', '+00:00'))
+                            point.time(timestamp)
+                        
+                        points.append(point)
                     
-                    # Add tags
-                    point.tag("location", weather_data.get('location_name', 'Unknown'))
-                    point.tag("source", "met_office")
+                    # Batch write to InfluxDB
+                    write_api.write(bucket=self.bucket, record=points)
                     
-                    # Add fields
-                    for key, value in weather_data.items():
-                        if key not in ['timestamp', 'location_name', 'latitude', 'longitude']:
-                            if isinstance(value, (int, float)):
-                                point.field(key, float(value))
-                            elif isinstance(value, str) and key != 'timestamp':
-                                point.field(key, value)
-                    
-                    # Set timestamp
-                    if 'timestamp' in weather_data:
-                        timestamp = datetime.fromisoformat(weather_data['timestamp'].replace('Z', '+00:00'))
-                        point.time(timestamp)
-                    
-                    # Write to InfluxDB
-                    write_api.write(bucket=self.bucket, record=point)
-                    
-                    logging.info("Successfully wrote data to InfluxDB")
-                    return True
+                    logging.info(f"Successfully wrote {len(data_points)} points to InfluxDB")
+                    return {"total": len(data_points), "successful": len(data_points), "failed": 0}
                     
             except InfluxDBError as e:
                 logging.warning(f"InfluxDB error: {e}")
@@ -383,7 +394,7 @@ class InfluxDBWriter:
                 backoff *= 2
         
         logging.error(f"Failed to write to InfluxDB after {self.max_attempts} attempts")
-        return False
+        return {"total": len(data_points), "successful": 0, "failed": len(data_points)}
 
 
 class CacheManager:
@@ -510,7 +521,7 @@ class WeatherCollector:
         )
     
     def process_cached_data(self):
-        """Process and upload any cached data"""
+        """Process and upload any cached data using batch writes for efficiency"""
         if not self.cache.has_cached_data():
             logging.info("No cached data to process")
             return
@@ -521,24 +532,24 @@ class WeatherCollector:
         if not cached_entries:
             return
         
-        successful = 0
-        failed_entries = []
+        # Extract weather data from cache entries
+        data_to_write = [entry.get('data') for entry in cached_entries if entry.get('data')]
         
-        for entry in cached_entries:
-            weather_data = entry.get('data')
-            cached_at = entry.get('cached_at')
-            
-            logging.info(f"Attempting to upload cached entry from {cached_at}")
-            
-            if self.influxdb.write_data(weather_data):
-                successful += 1
-            else:
-                failed_entries.append(entry)
+        if not data_to_write:
+            logging.warning("No valid weather data found in cache entries")
+            self.cache.clear_cache()
+            return
         
-        logging.info(f"Successfully uploaded {successful}/{len(cached_entries)} cached entries")
+        # Batch write all cached data at once
+        result = self.influxdb.write_batch(data_to_write)
         
-        if failed_entries:
+        logging.info(f"Batch upload result: {result['successful']}/{result['total']} successful")
+        
+        if result['failed'] > 0:
             # Save failed entries back to cache
+            failed_indices = set(range(result['failed']))  # Assume first failed entries
+            failed_entries = [cached_entries[i] for i in failed_indices if i < len(cached_entries)]
+            
             try:
                 with open(self.cache.cache_path, 'w') as f:
                     json.dump(failed_entries, f, indent=2)

@@ -119,7 +119,7 @@ class HistoricalImporter:
         )
 
     def batch_write_to_influxdb(self, observations: List[Dict[str, Any]]) -> Dict[str, int]:
-        """Write observations to InfluxDB in batches for efficiency."""
+        """Write observations to InfluxDB in batches for efficiency using true batch writes."""
         total = len(observations)
         successful = 0
         failed = 0
@@ -137,16 +137,13 @@ class HistoricalImporter:
                 f"Processing batch {batch_num}/{total_batches} ({len(batch)} points)..."
             )
 
-            batch_success = 0
-            for observation in batch:
-                if self.influxdb.write_data(observation):
-                    batch_success += 1
-                    successful += 1
-                else:
-                    failed += 1
+            # Use true batch write
+            result = self.influxdb.write_batch(batch)
+            successful += result['successful']
+            failed += result['failed']
 
             logging.info(
-                f"✓ Batch {batch_num}/{total_batches}: {batch_success}/{len(batch)} points written"
+                f"✓ Batch {batch_num}/{total_batches}: {result['successful']}/{len(batch)} points written"
             )
 
         return {"total": total, "successful": successful, "failed": failed}
